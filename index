@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>शब्दखेळ प्रो (Shabda-koda Pro)</title>
+    
+    <!-- Google Fonts: Noto Sans Devanagari for perfect cross-device cross-browser rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ====================================================================
+           STYLE.CSS CONFIGURATION (Mobile-first, Responsive CSS Variables)
+           ==================================================================== */
+        :root {
+            --font-main: 'Noto Sans Devanagari', sans-serif;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --color-correct: #2e7d32;
+            --color-present: #f9a825;
+            --color-absent: #c62828;
+            --color-conjunct: #673ab7;
+            --color-conjunct-light: #ede7f6;
+            --border-radius: 12px;
+            --transition-speed: 0.2s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        header {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #1a202c;
+        }
+
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .lives-display {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 20px;
+        }
+
+        .heart {
+            color: var(--color-absent);
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* Slots Grid System */
+        .board-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .tile-slot {
+            width: 65px;
+            height: 70px;
+            border: 3px solid #cbd5e1;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            background-color: var(--card-bg);
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-speed) ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tile-slot.selected {
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.6);
+            transform: scale(1.05);
+        }
+
+        .tile-slot.is-conjunct {
+            border-color: var(--color-conjunct);
+            background-color: var(--color-conjunct-light);
+        }
+
+        .tile-slot .conjunct-badge {
+            font-size: 9px;
+            position: absolute;
+            bottom: 2px;
+            color: var(--color-custom, var(--color-conjunct));
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Result States */
+        .tile-slot.state-correct {
+            background-color: var(--color-correct);
+            border-color: var(--color-correct);
+            color: white;
+        }
+        .tile-slot.state-present {
+            background-color: var(--color-present);
+            border-color: var(--color-present);
+            color: white;
+        }
+        .tile-slot.state-absent {
+            background-color: var(--color-absent);
+            border-color: var(--color-absent);
+            color: white;
+        }
+        .tile-slot.state-correct .conjunct-badge,
+        .tile-slot.state-present .conjunct-badge,
+        .tile-slot.state-absent .conjunct-badge {
+            color: white;
+        }
+
+        /* Interactive Interface Panels */
+        .input-panel {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .panel-prompt {
+            font-weight: 600;
+            font-size: 15px;
+            color: #4a5568;
+            text-align: center;
+            min-height: 22px;
+        }
+
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+        }
+
+        .key-btn {
+            background: #edf2f7;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-family: var(--font-main);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--transition-speed);
+            text-align: center;
+        }
+
+        .key-btn:active {
+            background: #cbd5e1;
+        }
+
+        /* Keyboard Key Status Tracking */
+        .key-btn.kbd-correct { background-color: var(--color-correct) !important; color: white; }
+        .key-btn.kbd-present { background-color: var(--color-present) !important; color: white; }
+        .key-btn.kbd-absent { background-color: var(--color-absent) !important; color: white; }
+
+        .barakhadi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .barakhadi-btn {
+            background: #e2e8f0;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 0;
+            font-family: var(--font-main);
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-reset { background-color: #e53e3e; }
+        .btn-confirm { background-color: #3182ce; }
+        .btn-confirm:disabled { background-color: #a0aec0; cursor: not-allowed; }
+
+        /* End Game Modal/Panel CSS */
+        .teaching-panel {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            border: 2px solid #cbd5e1;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 15px;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .teaching-panel h2 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .teaching-panel.win h2 { color: var(--color-correct); }
+        .teaching-panel.lose h2 { color: var(--color-absent); }
+
+        .teaching-meta {
+            margin-bottom: 15px;
+        }
+
+        .teaching-row {
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .teaching-label {
+            font-weight: bold;
+            color: #718096;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .teaching-value {
+            font-size: 16px;
+            color: #1a202c;
+            margin-top: 2px;
+        }
+
+        .share-btn {
+            width: 100%;
+            background-color: #4caf50;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* AdSense Layout Blocks */
+        .adsense-placeholder {
+            width: 100%;
+            min-height: 90px;
+            background-color: #e2e8f0;
+            border: 2px dashed #a0aec0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-size: 12px;
+            margin-top: 15px;
+            border-radius: 8px;
+            text-align: center;
+            padding: 5px;
+        }
+
+        /* Mobile Adjustments for Keyboards */
+        @media(max-width: 480px) {
+            .keyboard-grid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
+            .key-btn { font-size: 16px; padding: 10px 0; }
+            .tile-slot { width: 52px; height: 60px; font-size: 18px; }
+            .barakhadi-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>शब्दखेळ प्रो</h1>
+    </header>
+
+    <div class="status-container">
+        <div class="date-tag" id="gameDateTag">दिनांक: --</div>
+        <div class="lives-display" id="livesDisplay"></div>
+    </div>
+
+    <div class="game-container">
+        <!-- Main Interactive Game Matrix Board -->
+        <div class="board-row" id="gameBoard"></div>
+
+        <!-- Input control subsystem area -->
+        <div class="input-panel" id="inputPanel">
+            <div class="panel-prompt" id="panelPrompt">सुरुवात करण्यासाठी कोणत्याही रिकाम्या जागेवर (Slot) टॅप करा.</div>
+            
+            <!-- Contextual Consonant Engine -->
+            <div class="keyboard-grid" id="consonantKeyboard" style="display:none;"></div>
+
+            <!-- Contextual Barakhadi Matrix -->
+            <div class="barakhadi-grid" id="barakhadiMatrix" style="display:none;"></div>
+
+            <!-- Action Operations Controls Layout -->
+            <div class="action-row" id="actionRow" style="display:none;">
+                <button class="action-btn btn-reset" id="btnResetSlot">रद्द करा</button>
+                <button class="action-btn btn-confirm" id="btnConfirmSlot" disabled>तपासा</button>
+            </div>
+        </div>
+
+        <!-- Rewarded Ad Placement Recovery Button Hook -->
+        <div id="rewardedHookContainer" style="display: none; text-align: center; margin-top: 10px;">
+            <button class="share-btn" id="btnRewardedAd" style="background-color: #ff9800;">
+                🎬 जाहिरात पाहून पुढे खेळा (+3 नवीन आयुष्य)
+            </button>
+        </div>
+
+        <!-- Educational Meta Insight Analytics Board View UI -->
+        <div class="teaching-panel" id="teachingPanel">
+            <h2 id="teachingTitle">निकाल</h2>
+            <div class="teaching-meta">
+                <div class="teaching-row">
+                    <div class="teaching-label">योग्य शब्द (Word)</div>
+                    <div class="teaching-value" id="teachWord" style="font-size: 24px; font-weight: bold; color:#1a202c;">-</div>
+                </div>
+                <div class="teaching-row">
+                    <div class="teaching-label">इंग्रजी अर्थ (English Meaning)</div>
+                    <div class="teaching-value" id="teachMeaningEn">-</div>
+                </div>
+                <div class="teaching-row">
+                    <div class="teaching-label">मराठी वाक्य (Marathi Sentence)</div>
+                    <div class="teaching-value" id="teachSentenceMr" style="font-style: italic;">-</div>
+                </div>
+                <div class="teaching-row">
+                    <div class="teaching-label">वाक्याचा अनुवाद (English Translation)</div>
+                    <div class="teaching-value" id="teachSentenceEn">-</div>
+                </div>
+            </div>
+            <button class="share-btn" id="btnShareGrid">
+                🤝 निकाल शेअर करा (WhatsApp)
+            </button>
+        </div>
+
+        <!-- Dynamic Monetization Block Injections -->
+        <div id="adContainerBottom"></div>
+    </div>
+
+    <!-- ====================================================================
+       SCRIPT.JS CONFIGURATION (Core Engine, Parsing Framework & State logic)
+       ==================================================================== -->
+    <script>
+        /**********************************************************************
+         * 1. TOP-LEVEL GLOBAL SPECIFICATION TUNING & CONFIGURATION BLOCKS
+         **********************************************************************/
+        // GOOGLE SHEET EXPORT URL CONFIGURATION PLATFORM LINK PLACEHOLDER
+        // To deploy: Publish Google Sheet via File -> Share -> Publish to web -> CSV. Paste URL below.
+        const SHEET_CSV_URL = "PASTE_HERE";[cite: 1, 2]
+
+        // BALANCING ENGINE PARAMS
+        const START_LIVES = 7.0;[cite: 1, 2]
+        const RED_COST = 1.0;[cite: 1, 2]
+        const YELLOW_COST = 0.5;[cite: 1, 2]
+        const CONJUNCT_ERROR_COST = 1.0;[cite: 1]
+        const DEDUCT_ONCE_PER_CONSONANT = false; // Kinder structural deduplication rules flag[cite: 1, 2]
+        
+        // MONETIZATION CONFIGURATION HOOK PARAMETERS
+        // Note: Change ADS_ENABLED to true ONLY after site approval in AdSense dashboard!
+        const ADS_ENABLED = false;[cite: 1]
+        const ADSENSE_PUBLISHER_ID = "pub-5975509930049909"; // Your actual AdSense Publisher ID
+        const AD_SLOT_INTERSTITIAL = "XXXXXXXXXX"; // Put your custom Ad Unit slot ID here once created[cite: 1]
+        const AD_SLOT_REWARDED_HOOK = "XXXXXXXXXX";[cite: 1]
+        const SHOW_AD_EVERY_N_GAMES = 3;[cite: 1]
+
+        // DICTIONARY CONSTANTS FOR DEVANAGARI ALPHABET SYSTEM
+        const CONSONANTS = [
+            "क", "ख", "ग", "घ", "ङ", 
+            "च", "छ", "ज", "झ", "ञ", 
+            "ट", "ठ", "ड", "ढ", "ण", 
+            "त", "थ", "द", "ध", "न", 
+            "प", "फ", "ब", "भ", "म", 
+            "य", "र", "ल", "व", 
+            "श", "ष", "स", "ह", "ळ", 
+            "क्ष", "ज्ञ"
+        ];[cite: 1, 2]
+
+        const INDEPENDENT_VOWELS = [
+            "अ", "आ", "इ", "ई", "उ", "ऊ", 
+            "ए", "ऐ", "ओ", "औ", "अं", "अः"
+        ];[cite: 1, 2]
+
+        // Matra Character Maps Match standard indices 1 to 12 exactly
+        const BARAKHADI_MATRAS = [
+            { suffix: "",   name: " inherent अ" },  // Index 1[cite: 1, 2]
+            { suffix: "ा",  name: "आ matra" },       // Index 2[cite: 1, 2]
+            { suffix: "ि",  name: "इ matra" },       // Index 3[cite: 1, 2]
+            { suffix: "ी",  name: "ई matra" },       // Index 4[cite: 1, 2]
+            { suffix: "ु",  name: "उ matra" },       // Index 5[cite: 1, 2]
+            { suffix: "ू",  name: "ऊ matra" },       // Index 6[cite: 1, 2]
+            { suffix: "े",  name: "ए matra" },       // Index 7[cite: 1, 2]
+            { suffix: "ै",  name: "ऐ matra" },       // Index 8[cite: 1, 2]
+            { suffix: "ो",  name: "ओ matra" },       // Index 9[cite: 1, 2]
+            { suffix: "ौ",  name: "औ matra" },       // Index 10[cite: 1, 2]
+            { suffix: "ं",  name: "anusvara" },      // Index 11[cite: 1, 2]
+            { suffix: "ः",  name: "visarga" }        // Index 12[cite: 1, 2]
+        ];
+
+        // INLINE COMPACT FALLBACK CORPUS ENGINE SPECIFICATIONS
+        const FALLBACK_WORDS = [
+            { word: "कमल", meaning_en: "Lotus", sentence_mr: "तलावात सुंदर कमल उमलले आहे.", sentence_en: "A beautiful lotus has bloomed in the lake." },[cite: 1]
+            { word: "मराठी", meaning_en: "Marathi Language", sentence_mr: "आम्ही दररोज मराठी बोलतो.", sentence_en: "We speak Marathi every day." },[cite: 1, 2]
+            { word: "महाराष्ट्र", meaning_en: "Maharashtra State", sentence_mr: "महाराष्ट्र ही संतांची भूमी आहे.", sentence_en: "Maharashtra is the land of saints." },[cite: 1]
+            { word: "क्षेत्र", meaning_en: "Field / Region", sentence_mr: "ते विज्ञानाचे क्षेत्र आहे.", sentence_en: "That is the field of science." },[cite: 1]
+            { word: "प्रयत्न", meaning_en: "Effort / Try", sentence_mr: "यशस्वी होण्यासाठी प्रयत्न करा.", sentence_en: "Make an effort to become successful." },[cite: 1, 2]
+            { word: "नमस्कार", meaning_en: "Greetings / Hello", sentence_mr: "मोठ्या लोकांना नमस्कार करावा.", sentence_en: "One should offer greetings to elders." }[cite: 2]
+        ];
+
+        /**********************************************************************
+         * 2. STATE INTERNALS RUNTIME TRACKERS
+         **********************************************************************/
+        let currentWordData = null; 
+        let targetTiles = [];       // Array parsed structural breakdown elements of current word
+        let playerBoardGuesses = []; // Track details player placed in board
+        let currentSelectedIndex = null; 
+        let currentLives = START_LIVES;[cite: 1, 2]
+        let gameOver = false;
+        let keyboardHistoryColors = {}; // Track keys using Wordle color maps[cite: 1, 2]
+        let inputsConjunctSequenceStack = []; // Cache build flow arrays for complex structures
+
+        /**********************************************************************
+         * 3. EXPLICIT DEVANAGARI UNICODE PARSING LINGUISTIC SEGMENTATION ENGINE
+         **********************************************************************/
+        function segmentDevanagariWord(wordStr) {
+            const tiles = [];
+            const chars = Array.from(wordStr.trim());
+            let i = 0;
+
+            while (i < chars.length) {
+                let currentChar = chars[i];
+
+                // Boundary Guard: Handle structural Independent Vowels explicitly[cite: 1, 2]
+                if (INDEPENDENT_VOWELS.includes(currentChar)) {
+                    let matraIdx = 1; // Default inherent
+                    
+                    // Match bound modifications if explicitly added to independent vowels
+                    if (i + 1 < chars.length && isMatraOrModifier(chars[i + 1])) {
+                        matraIdx = getMatraIndex(chars[i + 1]);
+                        i++;
+                    }
+                    
+                    tiles.push({
+                        text: wordStr.substring(i - (matraIdx > 1 ? 1 : 0), i + 1),
+                        baseConsonants: [currentChar],
+                        stackDepth: 1,
+                        isConjunct: false,
+                        matraIndex: matraIdx
+                    });
+                    i++;
+                    continue;
+                }
+
+                // Complex Cluster Tracking State Context Loop
+                if (CONSONANTS.includes(currentChar)) {
+                    let clusterConsonants = [currentChar];
+                    let clusterStartIndex = i;
+
+                    // Deep parsing sequence lookup scanning for halant connectors[cite: 1, 2]
+                    while (i + 1 < chars.length) {
+                        if (chars[i + 1] === '्') { // Halant found[cite: 1, 2]
+                            if (i + 2 < chars.length && CONSONANTS.includes(chars[i + 2])) {
+                                clusterConsonants.push(chars[i + 2]);
+                                i += 2; // Jump forward past halant and secondary consonant cluster loop
+                                continue;
+                            }
+                        }
+                        break;
+                    }
+
+                    // Look ahead for trailing structural variations (matras, anusvaras, visargas)[cite: 1, 2]
+                    let assignedMatraIndex = 1; 
+                    if (i + 1 < chars.length && isMatraOrModifier(chars[i + 1])) {
+                        assignedMatraIndex = getMatraIndex(chars[i + 1]);
+                        i++;
+                    }
+
+                    let clusterEndIndex = i;
+                    let fullTileText = chars.slice(clusterStartIndex, clusterEndIndex + 1).join('');
+
+                    tiles.push({
+                        text: fullTileText,
+                        baseConsonants: clusterConsonants,
+                        stackDepth: clusterConsonants.length,
+                        isConjunct: clusterConsonants.length > 1,
+                        matraIndex: assignedMatraIndex
+                    });
+                    i++;
+                    continue;
+                }
+
+                // Fallback catch-all structural anomaly safety bounds logic
+                i++;
+            }
+            return tiles;
+        }
+
+        function isMatraOrModifier(char) {
+            return BARAKHADI_MATRAS.some(m => m.suffix === char && m.suffix !== "");
+        }
+
+        function getMatraIndex(char) {
+            const idx = BARAKHADI_MATRAS.findIndex(m => m.suffix === char);
+            return idx !== -1 ? idx + 1 : 1;
+        }
+
+        /**********************************************************************
+         * 4. DATA LOADER & PARSER SYSTEMS (Static / Live Fallback Lifecycle)
+         **********************************************************************/
+        async function initializeDataFetchEngine() {
+            let records = FALLBACK_WORDS;[cite: 1, 2]
+            
+            if (SHEET_CSV_URL && SHEET_CSV_URL !== "PASTE_HERE") {
+                try {
+                    const response = await fetch(SHEET_CSV_URL);
+                    if (response.ok) {
+                        const rawText = await response.text();
+                        const parsedData = parseCSVMatrix(rawText);
+                        if (parsedData && parsedData.length > 0) {
+                            records = parsedData;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("External data stream load failed. Defaulting to internal fallback data nodes.", e);
+                }
+            }
+
+            selectTargetDayWord(records);
+            buildInitialGameBoardHTML();
+            renderOnScreenKeyboard();
+            updateHeartsDisplayContainer();
+            evalAdSenseLayoutConfiguration();
+        }
+
+        // Compliant Zero-Dependency RFC-4180 Inline CSV Data Stream Parser[cite: 1, 2]
+        function parseCSVMatrix(text) {
+            const lines = [];
+            let row = [""];
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i];
+                let next = text[i+1];
+
+                if (c === '"') {
+                    if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
+                    else { inQuotes = !inQuotes; }
+                } else if (c === ',' && !inQuotes) {
+                    row.push('');
+                } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                    if (c === '\r' && next === '\n') { i++; }
+                    lines.push(row);
+                    row = [''];
+                } else {
+                    row[row.length - 1] += c;
+                }
+            }
+            if (row.length > 1 || row[0] !== '') { lines.push(row); }
+            if (lines.length < 2) return null;
+
+            const headers = lines[0].map(h => h.trim().toLowerCase());
+            const modelObjects = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i];
+                if (values.length < headers.length) continue;
+                
+                let entry = {};
+                headers.forEach((header, index) => {
+                    entry[header] = values[index] ? values[index].trim() : "";
+                });
+                
+                if (entry.word) { modelObjects.push(entry); }
+            }
+            return modelObjects;
+        }
+
+        function selectTargetDayWord(wordPool) {
+            // Check for matching date entries or fallback cleanly[cite: 1, 2]
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById("gameDateTag").innerText = `दिनांक: ${todayStr}`;
+
+            let matchedWord = wordPool.find(w => w.date === todayStr);[cite: 1, 2]
+
+            if (!matchedWord) {
+                // Time calculations to handle deterministic cyclical day rotation indexing calculations[cite: 1, 2]
+                const baseline = new Date("2024-01-01");
+                const current = new Date(todayStr);
+                const differenceTime = Math.abs(current - baseline);
+                const differenceDays = Math.floor(differenceTime / (1000 * 60 * 60 * 24));
+                const targetIdx = differenceDays % wordPool.length;[cite: 1, 2]
+                matchedWord = wordPool[targetIdx];
+            }
+
+            currentWordData = matchedWord;
+            targetTiles = segmentDevanagariWord(currentWordData.word);
+            
+            // Instantiating matching baseline array tracks matching structural parameters
+            playerBoardGuesses = new Array(targetTiles.length).fill(null).map(() => ({
+                isCommitted: false,
+                guessedConsonants: [],
+                guessedMatraIndex: 1,
+                evalState: null
+            }));
+        }
+
+        /**********************************************************************
+         * 5. DISPLAY ENGINE BOARD BUILDER FUNCTIONS
+         **********************************************************************/
+        function buildInitialGameBoardHTML() {
+            const board = document.getElementById("gameBoard");
+            board.innerHTML = "";
+
+            playerBoardGuesses.forEach((guess, idx) => {
+                const target = targetTiles[idx];
+                const slot = document.createElement("div");
+                slot.className = "tile-slot";
+                
+                // Jodakshara Hint System Coloring & Depth Label Flags Injection[cite: 1, 2]
+                if (target.isConjunct) {
+                    slot.classList.add("is-conjunct");
+                    slot.innerHTML = `<span class="conjunct-badge">जोडाक्षर<br>${target.stackDepth} अक्षरे</span>`;[cite: 1]
+                }
+
+                slot.addEventListener("click", () => handleSlotSelectionFocus(idx));
+                board.appendChild(slot);
+            });
+        }
+
+        function renderOnScreenKeyboard() {
+            const container = document.getElementById("consonantKeyboard");
+            container.innerHTML = "";
+
+            // Render Vowels then Consonants sequentially to maintain clear conceptual groupings[cite: 1, 2]
+            const completeKeys = [...INDEPENDENT_VOWELS, ...CONSONANTS];
+            
+            completeKeys.forEach(char => {
+                const btn = document.createElement("button");
+                btn.className = "key-btn";
+                btn.innerText = char;
+                
+                // Colorize key based on history state
+                if (keyboardHistoryColors[char]) {
+                    btn.classList.add(`kbd-${keyboardHistoryColors[char]}`);
+                }
+
+                btn.addEventListener("click", () => handleKeyboardCharacterInput(char));
+                container.appendChild(btn);
+            });
+        }
+
+        function updateHeartsDisplayContainer() {
+            const container = document.getElementById("livesDisplay");
+            container.innerHTML = "";
+            
+            let fullHearts = Math.floor(currentLives);
+            let hasHalf = (currentLives % 1 !== 0);[cite: 1, 2]
+
+            for (let i = 0; i < 7; i++) {
+                const span = document.createElement("span");
+                span.className = "heart";
+                if (i < fullHearts) {
+                    span.innerText = "❤️";
+                } else if (i === fullHearts && hasHalf) {
+                    span.innerText = "💔"; // Display representation matching half-heart values[cite: 1, 2]
+                } else {
+                    span.innerText = "🖤";
+                }
+                container.appendChild(span);
+            }
+        }
+
+        /**********************************************************************
+         * 6. INPUT INTERACTION STATE MACHINE CONTROLLERS
+         **********************************************************************/
+        function handleSlotSelectionFocus(index) {
+            if (gameOver || playerBoardGuesses[index].isCommitted) return;
+
+            currentSelectedIndex = index;
+            inputsConjunctSequenceStack = [];
+            
+            // Clean interface focus classes
+            document.querySelectorAll(".tile-slot").forEach((s, idx) => {
+                s.classList.toggle("selected", idx === index);
+            });
+
+            const targetTile = targetTiles[index];
+            const prompt = document.getElementById("panelPrompt");
+            
+            if (targetTile.isConjunct) {
+                prompt.innerText = `हे ${targetTile.stackDepth} अक्षरांचे जोडाक्षर आहे - क्रमाने ${targetTile.stackDepth} व्यंजने निवडा.`;[cite: 1]
+            } else {
+                prompt.innerText = "पहिले व्यंजन किंवा स्वर निवडा.";
+            }
+
+            document.getElementById("consonantKeyboard").style.display = "grid";
+            document.getElementById("barakhadiMatrix").style.display = "none";
+            document.getElementById("actionRow").style.display = "flex";
+            
+            document.getElementById("btnConfirmSlot").disabled = true;
+            refreshActivePreviewRender();
+        }
+
+        function handleKeyboardCharacterInput(char) {
+            if (currentSelectedIndex === null) return;
+            
+            const targetTile = targetTiles[currentSelectedIndex];
+            const prompt = document.getElementById("panelPrompt");
+
+            if (targetTile.isConjunct) {
+                // Complex validation sequence building logic flows[cite: 2]
+                if (inputsConjunctSequenceStack.length < targetTile.stackDepth) {
+                    inputsConjunctSequenceStack.push(char);
+                }
+                
+                prompt.innerText = `निवडलेले: ${inputsConjunctSequenceStack.join(" + ")}`;
+
+                // Switch state display frames once targeted stack limits match parameters[cite: 2]
+                if (inputsConjunctSequenceStack.length === targetTile.stackDepth) {
+                    transitionToBarakhadiMatrixSelection();
+                }
+            } else {
+                // Standard Single Core Element Entry Paths
+                inputsConjunctSequenceStack = [char];
+                transitionToBarakhadiMatrixSelection();
+            }
+            refreshActivePreviewRender();
+        }
+
+        function transitionToBarakhadiMatrixSelection() {
+            document.getElementById("consonantKeyboard").style.display = "none";
+            document.getElementById("barakhadiMatrix").style.display = "grid";
+            document.getElementById("panelPrompt").innerText = "आता बाराखडी मधील योग्य मात्रा निवडा:";[cite: 2]
+            
+            buildBarakhadiMatrixPreviews();
+        }
+
+        function buildBarakhadiMatrixPreviews() {
+            const matrix = document.getElementById("barakhadiMatrix");
+            matrix.innerHTML = "";
+
+            // Combine stacked configurations using standard baseline halants to group characters
+            let compoundBase = "";
+            if (inputsConjunctSequenceStack.length > 1) {
+                compoundBase = inputsConjunctSequenceStack.join("्"); // Form valid conjunct stack syntax
+            } else {
+                compoundBase = inputsConjunctSequenceStack[0] || "";
+            }
+
+            BARAKHADI_MATRAS.forEach((m, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "barakhadi-btn";
+                
+                // Append corresponding matras to the built cluster base text
+                let visualText = compoundBase + m.suffix; 
+                btn.innerText = visualText;
+
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".barakhadi-btn").forEach(b => b.style.borderColor = "#cbd5e1");
+                    btn.style.borderColor = "#3182ce";
+                    
+                    let guessState = playerBoardGuesses[currentSelectedIndex];
+                    guessState.guessedConsonants = [...inputsConjunctSequenceStack];
+                    guessState.guessedMatraIndex = idx + 1;
+                    
+                    document.getElementById("btnConfirmSlot").disabled = false;
+                    refreshActivePreviewRender();
+                });
+
+                matrix.appendChild(btn);
+            });
+        }
+
+        function refreshActivePreviewRender() {
+            if (currentSelectedIndex === null) return;
+            
+            const slot = document.getElementById("gameBoard").children[currentSelectedIndex];
+            const target = targetTiles[currentSelectedIndex];
+            let currentGuess = playerBoardGuesses[currentSelectedIndex];
+
+            // Reconstruct text for dynamic runtime slot rendering
+            if (currentGuess.guessedConsonants.length > 0) {
+                let base = currentGuess.guessedConsonants.join(currentGuess.guessedConsonants.length > 1 ? "्" : "");
+                let suffix = BARAKHADI_MATRAS[currentGuess.guessedMatraIndex - 1].suffix;
+                slot.childNodes[0].nodeValue = base + suffix;
+            } else if (inputsConjunctSequenceStack.length > 0) {
+                slot.childNodes[0].nodeValue = inputsConjunctSequenceStack.join("्");
+            } else {
+                slot.childNodes[0].nodeValue = "";
+            }
+
+            // Keep badge text intact for conjunct slots
+            if (target.isConjunct) {
+                let badge = slot.querySelector(".conjunct-badge");
+                if (!badge) {
+                    slot.innerHTML += `<span class="conjunct-badge">जोडाक्षर<br>${target.stackDepth} अक्षरे</span>`;
+                }
+            }
+        }
+
+        // Reset operation panel visibility systems
+        document.getElementById("btnResetSlot").addEventListener("click", () => {
+            if (currentSelectedIndex === null) return;
+            
+            playerBoardGuesses[currentSelectedIndex] = {
+                isCommitted: false,
+                guessedConsonants: [],
+                guessedMatraIndex: 1,
+                evalState: null
+            };
+            
+            inputsConjunctSequenceStack = [];
+            handleSlotSelectionFocus(currentSelectedIndex);
+        });
+
+        /**********************************************************************
+         * 7. SCORING SYSTEM RULES VALIDATION CONTROLLERS (§4 & §5)
+         **********************************************************************/
+        document.getElementById("btnConfirmSlot").addEventListener("click", () => {
+            if (currentSelectedIndex === null || gameOver) return;
+
+            const target = targetTiles[currentSelectedIndex];
+            let guess = playerBoardGuesses[currentSelectedIndex];
+            
+            let isPerfectMatch = false;
+            let outcomeState = "absent"; // Default: RED[cite: 1, 2]
+
+            // 1. EVALUATE EXACT TARGET MATCH CONDITIONS (GREEN STATE)[cite: 1, 2]
+            const checkConsonantsMatch = (target.baseConsonants.length === guess.guessedConsonants.length) && 
+                target.baseConsonants.every((c, i) => c === guess.guessedConsonants[i]); // Strict element order verification[cite: 2]
+            
+            if (checkConsonantsMatch && target.matraIndex === guess.guessedMatraIndex) {
+                isPerfectMatch = true;
+                outcomeState = "correct";[cite: 1, 2]
+            } else {
+                // 2. SEARCH FOR PARTIAL OCCURRENCES IN TARGET WORD (YELLOW STATE)[cite: 1, 2]
+                let baseFoundAnywhere = false;
+                guess.guessedConsonants.forEach(gc => {
+                    targetTiles.forEach(t => {
+                        if (t.baseConsonants.includes(gc)) { baseFoundAnywhere = true; }
+                    });
+                });
+
+                if (baseFoundAnywhere && !target.isConjunct) {
+                    outcomeState = "present";[cite: 1, 2]
+                }
+            }
+
+            // 3. APPLY SCORING DEDUCTION MECHANICS BASED ON LIFE TYPE PENALTIES[cite: 1]
+            if (!isPerfectMatch) {
+                if (target.isConjunct) {
+                    // Jodakshara failure incurs immediate full health penalties[cite: 1, 2]
+                    deductGameLives(CONJUNCT_ERROR_COST, guess.guessedConsonants);[cite: 1]
+                } else {
+                    if (outcomeState === "present") {
+                        deductGameLives(YELLOW_COST, guess.guessedConsonants);[cite: 1, 2]
+                    } else {
+                        deductGameLives(RED_COST, guess.guessedConsonants);[cite: 1, 2]
+                    }
+                }
+            }
+
+            // Update local state tracks
+            guess.isCommitted = true;
+            guess.evalState = outcomeState;
+
+            // Update individual Keyboard state metrics maps[cite: 1]
+            guess.guessedConsonants.forEach(gc => {
+                updateKeyboardColorCache(gc, outcomeState);
+            });
+
+            // Refresh UI components
+            renderOnScreenKeyboard();
+            updateHeartsDisplayContainer();
+            applyVisualStateToBoardSlot(currentSelectedIndex, outcomeState);
+            
+            // Clear panel inputs focus
+            document.getElementById("consonantKeyboard").style.display = "none";
+            document.getElementById("barakhadiMatrix").style.display = "none";
+            document.getElementById("actionRow").style.display = "none";
+            document.getElementById("panelPrompt").innerText = "सुरुवात करण्यासाठी कोणत्याही रिकाम्या जागेवर (Slot) टॅप करा.";
+            
+            document.getElementById("gameBoard").children[currentSelectedIndex].classList.remove("selected");
+            currentSelectedIndex = null;
+
+            checkGameEndStatusCondition();
+        });
+
+        function deductGameLives(cost, inputConsonants) {
+            if (DEDUCT_ONCE_PER_CONSONANT) {[cite: 1, 2]
+                // Kind Deduplication Validation Checks logic paths[cite: 1, 2]
+                let allAlreadyPenalized = inputConsonants.every(c => keyboardHistoryColors[c] === "absent" || keyboardHistoryColors[c] === "present");
+                if (allAlreadyPenalized) return;
+            }
+            currentLives = Math.max(0, currentLives - cost);
+        }
+
+        function updateKeyboardColorCache(char, state) {
+            const hierarchy = { "correct": 3, "present": 2, "absent": 1, null: 0 };
+            let currentBest = keyboardHistoryColors[char] || null;
+            
+            if (hierarchy[state] > hierarchy[currentBest]) {
+                keyboardHistoryColors[char] = state;[cite: 1]
+            }
+        }
+
+        function applyVisualStateToBoardSlot(slotIdx, state) {
+            const slot = document.getElementById("gameBoard").children[slotIdx];
+            slot.className = `tile-slot state-${state}`;
+        }
+
+        /**********************************************************************
+         * 8. ENDGAME LIFECYCLE MANAGEMENT HOOKS
+         **********************************************************************/
+        function checkGameEndStatusCondition() {
+            let allWon = playerBoardGuesses.every(g => g.isCommitted && g.evalState === "correct");
+
+            if (allWon) {
+                triggerEndGameViewLayout(true);
+            } else if (currentLives <= 0) {[cite: 1, 2]
+                triggerEndGameViewLayout(false);
+            }
+        }
+
+        function triggerEndGameViewLayout(isWin) {
+            gameOver = true;
+            document.getElementById("inputPanel").style.display = "none";
+            
+            const teachPanel = document.getElementById("teachingPanel");
+            teachPanel.style.display = "block";
+            
+            // Render Dynamic Metadata pulled directly from dataset row fields[cite: 1, 2]
+            document.getElementById("teachWord").innerText = currentWordData.word;[cite: 1, 2]
+            document.getElementById("teachMeaningEn").innerText = currentWordData.meaning_en;[cite: 1, 2]
+            document.getElementById("teachSentenceMr").innerText = currentWordData.sentence_mr;[cite: 1, 2]
+            document.getElementById("teachSentenceEn").innerText = currentWordData.sentence_en;[cite: 1, 2]
+
+            const title = document.getElementById("teachingTitle");
+            if (isWin) {
+                title.innerText = "🎉 अभिनंदन! तुम्ही जिंकलात!";
+                title.className = "win";
+            } else {
+                title.innerText = "💥 गेम संपला! तुमचे सातही जन्म संपले.";
+                title.className = "lose";
+                
+                // Show recovery ad hook button option if available[cite: 1]
+                document.getElementById("rewardedHookContainer").style.display = "block";
+            }
+
+            // Track games count to fire interstitial ads natively at end breaks[cite: 1]
+            let count = parseInt(localStorage.getItem("sz_games_played") || "0") + 1;
+            localStorage.setItem("sz_games_played", count);
+            
+            if (ADS_ENABLED && (count % SHOW_AD_EVERY_N_GAMES === 0)) {[cite: 1]
+                executeInterstitialAdCall();
+            }
+        }
+
+        // Opt-In Recovery Lifecycle Action logic[cite: 1]
+        document.getElementById("btnRewardedAd").addEventListener("click", () => {
+            alert("जाहिरात लोड होत आहे... (Development Placeholder Action View)");
+            
+            // Reward Lifecycle Grant injections execution paths[cite: 1]
+            currentLives = 3.0;
+            gameOver = false;
+            
+            document.getElementById("rewardedHookContainer").style.display = "none";
+            document.getElementById("teachingPanel").style.display = "none";
+            document.getElementById("inputPanel").style.display = "flex";
+            
+            updateHeartsDisplayContainer();
+        });
+
+        // Spoiler-Free Emoji Sharing Matrix Generation Engine (§7)[cite: 1, 2]
+        document.getElementById("btnShareGrid").addEventListener("click", () => {
+            let emojiMatrix = playerBoardGuesses.map(g => {
+                if (g.evalState === "correct") return "🟩";
+                if (g.evalState === "present") return "🟨";
+                return "🟥";
+            }).join("");
+
+            let textBlock = `शब्दखेळ प्रो निकाल 🧩\n\nनिकाल: ${emojiMatrix}\nशिल्लक आयुष्य: ${currentLives} ❤️\n\nआजचा मराठी शब्द खेळण्यासाठी या लिंकवर जा!`;[cite: 1, 2]
+            
+            navigator.clipboard.writeText(textBlock).then(() => {
+                alert("निकाल क्लिपबोर्डवर कॉपी झाला आहे! WhatsApp वर पेस्ट करा.");[cite: 1, 2]
+            });
+        });
+
+        /**********************************************************************
+         * 9. ADVERTISING PLATFORM INTEGRATION ENGINES
+         **********************************************************************/
+        function evalAdSenseLayoutConfiguration() {
+            const container = document.getElementById("adContainerBottom");
+            container.innerHTML = "";
+
+            if (!ADS_ENABLED) {
+                // Development Safe Geometry Boundary Mappings[cite: 1]
+                const devBox = document.createElement("div");
+                devBox.className = "adsense-placeholder";
+                devBox.innerText = "[ जाहिरात जागा: ca-pub-5975509930049909 / Banner Slot Placeholder ]";
+                container.appendChild(devBox);
+                return;
+            }
+
+            // Inject Standard production script elements securely[cite: 1]
+            let scriptNode = document.getElementById("adsenseMainScript");
+            if (!scriptNode) {
+                scriptNode = document.createElement("script");
+                scriptNode.id = "adsenseMainScript";
+                scriptNode.async = true;
+                scriptNode.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`;[cite: 1]
+                scriptNode.crossOrigin = "anonymous";
+                document.head.appendChild(scriptNode);
+            }
+
+            // Standard layout block unit generation rules injection matches policies[cite: 1]
+            const ins = document.createElement("ins");
+            ins.className = "adsbygoogle";
+            ins.style.display = "block";
+            ins.setAttribute("data-ad-client", ADSENSE_PUBLISHER_ID);
+            ins.setAttribute("data-ad-slot", AD_SLOT_INTERSTITIAL);
+            ins.setAttribute("data-ad-format", "auto");
+            ins.setAttribute("data-full-width-responsive", "true");
+
+            container.appendChild(ins);
+            
+            try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) { console.error(e); }
+        }
+
+        function executeInterstitialAdCall() {
+            console.log("Triggering network call for interstitial display mapping slots.");[cite: 1]
+        }
+
+        // Initialize runtime platform loop engines immediately upon script resource readiness
+        window.addEventListener("DOMContentLoaded", initializeDataFetchEngine);
+    </script>
+</body>
+</html>
